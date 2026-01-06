@@ -262,6 +262,71 @@ employee-attendance-app/
 
 ## 🚢 Deployment
 
+### Express Backend (Elastic Beanstalk)
+
+#### Backend setup
+1. Install backend dependencies:
+   ```bash
+   npm install express cors dotenv
+   ```
+2. Environment variables (set in EB, not committed):
+   - `MONGODB_URI`
+   - `CORS_ORIGINS` (comma-separated origins, e.g. `https://app.example.com,http://localhost:3000`; defaults to `*`)
+   - `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
+   - `CLOUDINARY_API_KEY`
+   - `CLOUDINARY_API_SECRET`
+   - `CLOUDINARY_UPLOAD_PRESET`
+   - `NEXT_PUBLIC_APP_URL`
+   - `NEXT_PUBLIC_DEMO_EMPLOYEE_ID`
+3. Local run:
+   ```bash
+   npm start
+   # server.js listens on PORT (default 8080)
+   ```
+   Frontend production server remains available via `npm run start:frontend` (Next.js).
+
+#### API structure
+- All backend routes mounted under `/api` in `server.js`.
+- Recommended: create route modules (e.g. `routes/attendance.js`, `routes/employee.js`) and mount them in `server.js` with `app.use('/api/attendance', attendanceRouter)`.
+- Keep business logic in separate service files; avoid large route handlers.
+
+#### AWS Elastic Beanstalk (Node.js platform)
+1. Install EB CLI (once): `pip install awsebcli`
+2. Initialize (from repo root):
+   ```bash
+   eb init --platform "Node.js" --region <your-region>
+   # select/create an application, accept SSH key if desired
+   ```
+3. Create environment (single-instance to start):
+   ```bash
+   eb create employee-attendance-backend --single
+   ```
+4. Set environment variables:
+   ```bash
+   eb setenv MONGODB_URI="..." \
+     CORS_ORIGINS="https://app.example.com" \
+     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="..." \
+     CLOUDINARY_API_KEY="..." \
+     CLOUDINARY_API_SECRET="..." \
+     CLOUDINARY_UPLOAD_PRESET="employee_photos" \
+     NEXT_PUBLIC_APP_URL="http://<env>.elasticbeanstalk.com" \
+     NEXT_PUBLIC_DEMO_EMPLOYEE_ID="..."
+   ```
+5. Deploy:
+   ```bash
+   eb deploy
+   ```
+6. Verify:
+   - Check `http://<env>.elasticbeanstalk.com/api/health`
+   - Fetch example: `curl http://<env>.elasticbeanstalk.com/api/example`
+   - Logs: `eb logs`
+
+#### Production tips
+- Keep MongoDB Atlas network rules restricted to EB outbound IPs or use VPC peering.
+- Rotate credentials; never commit `.env*`.
+- Use an HTTPS-enabled EB load balancer with ACM certificate for production.
+- Add monitoring/alerts (CloudWatch alarms, health checks).
+
 ### Deploy to Vercel
 
 1. Push your code to GitHub
@@ -379,4 +444,3 @@ For issues or questions:
 
 ---
 
-**Built with ❤️ using Next.js, MongoDB, and Cloudinary**
